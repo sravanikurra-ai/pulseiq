@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Environment secrets
+.env
+
+# Node
+node_modules/
+build/
+dist/
+
+# IDE
+.vscode/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage/test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
