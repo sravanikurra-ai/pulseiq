@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: pulseiq_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pulseiq_user
+      POSTGRES_PASSWORD: pulseiq_pass
+      POSTGRES_DB: pulseiq
+    ports:
+      - "5433:5432"
+    volumes:
+      - pulseiq_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pulseiq_user -d pulseiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pulseiq_pg_data:

@@ -1,9 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.logging_config import configure_logging
 import logging
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -31,9 +35,20 @@ async def on_startup():
 
 
 @app.get("/health", tags=["System"])
-async def health_check():
+async def health_check(db: Session = Depends(get_db)):
     """
-    Basic liveness check. Returns 200 OK if the server process is running.
-    Does NOT yet check database/redis connectivity — that comes in Phase 4.
+    Liveness + readiness check. Confirms the server is running AND
+    that it can successfully reach the database.
     """
-    return {"status": "ok", "service": "PulseIQ API", "version": "0.1.0"}
+    db_status = "ok"
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+
+    return {
+        "status": "ok",
+        "service": "PulseIQ API",
+        "version": "0.1.0",
+        "database": db_status,
+    }
