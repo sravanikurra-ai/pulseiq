@@ -5,6 +5,10 @@ and logs the outcome of every run. This is the real, re-runnable pipeline
 entry point — unlike seed_database.py, this assumes the database may
 already contain data and must not create duplicates.
 """
+from pydantic import ValidationError
+from app.schemas.ingestion_schemas import (
+    CustomerRecordSchema, ProductRecordSchema, OrderRecordSchema, MarketingSpendRecordSchema,
+)
 import logging
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
@@ -53,26 +57,40 @@ def ingest_customers(db: Session) -> DataIngestionLog:
         existing_ids = {
             row[0] for row in db.query(Customer.external_id).all()
         }
+        valid_records = []
+        invalid_count = 0
+        for c in raw_customers:
+            try:
+                validated = CustomerRecordSchema(**c)
+                valid_records.append(validated.model_dump())
+            except ValidationError as ve:
+                invalid_count += 1
+                logger.warning(f"Rejected invalid customer record {c.get('external_id')}: {ve.errors()}")
 
         new_customers = [
-            Customer(**c) for c in raw_customers if c["external_id"] not in existing_ids
+            Customer(**c) for c in valid_records if c["external_id"] not in existing_ids
         ]
         db.add_all(new_customers)
         log.records_ingested = len(new_customers)
 
+        duplicate_count = len(valid_records) - len(new_customers)
+
         quality = DataQualityResult(
             ingestion_log_id=log.id,
-            valid_records=len(raw_customers),
-            invalid_records=0,
-            duplicate_records=len(raw_customers) - len(new_customers),
+            valid_records=len(valid_records),
+            invalid_records=invalid_count,
+            duplicate_records=duplicate_count,
             missing_value_records=0,
         )
         db.add(quality)
 
-        log.status = "success" if new_customers or not raw_customers else "success"
+        log.status = "success" if invalid_count == 0 else "partial"
         log.finished_at = datetime.now(timezone.utc)
         db.commit()
-        logger.info(f"Customer ingestion: fetched={log.records_fetched}, ingested={log.records_ingested}")
+        logger.info(
+            f"Customer ingestion: fetched={log.records_fetched}, ingested={log.records_ingested}, "
+            f"invalid={invalid_count}, duplicates={duplicate_count}"
+        )
 
     except Exception as e:
         db.rollback()
@@ -164,18 +182,33 @@ def ingest_orders(db: Session) -> DataIngestionLog:
 
         log.records_fetched = len(raw_orders)
 
+        # --- Schema validation step (Phase 8) ---
+        valid_orders = []
+        invalid_count = 0
+        for o in raw_orders:
+            try:
+                validated = OrderRecordSchema(**o)
+                valid_orders.append(validated.model_dump())
+            except ValidationError as ve:
+                invalid_count += 1
+                logger.warning(f"Rejected invalid order record {o.get('external_id')}: {ve.errors()}")
+        raw_orders = valid_orders  # only validated records proceed
+        # --- end validation step ---
+
+                # Track schema-invalid and FK-invalid separately for accurate metrics
+        schema_invalid_count = invalid_count  # count so far, before FK check
+
         existing_ids = {row[0] for row in db.query(Order.external_id).all()}
         customer_map = {c.external_id: c.id for c in db.query(Customer).all()}
         product_map = {p.external_id: p.id for p in db.query(Product).all()}
 
         new_orders = []
-        invalid_count = 0
+        fk_invalid_count = 0
         for o in raw_orders:
             if o["external_id"] in existing_ids:
                 continue
             if o["customer_external_id"] not in customer_map or o["product_external_id"] not in product_map:
-                # Referenced customer/product doesn't exist yet — invalid record, skip it.
-                invalid_count += 1
+                fk_invalid_count += 1
                 continue
             new_orders.append(Order(
                 external_id=o["external_id"],
@@ -189,26 +222,28 @@ def ingest_orders(db: Session) -> DataIngestionLog:
                 order_date=datetime.fromisoformat(o["order_date"]),
             ))
 
+        total_invalid_count = schema_invalid_count + fk_invalid_count
+        duplicate_count = len(raw_orders) - len(new_orders) - fk_invalid_count
+
         db.add_all(new_orders)
         log.records_ingested = len(new_orders)
 
         quality = DataQualityResult(
             ingestion_log_id=log.id,
             valid_records=len(new_orders),
-            invalid_records=invalid_count,
-            duplicate_records=len(raw_orders) - len(new_orders) - invalid_count,
+            invalid_records=total_invalid_count,
+            duplicate_records=duplicate_count,
             missing_value_records=0,
         )
         db.add(quality)
 
-        log.status = "success" if invalid_count == 0 else "partial"
+        log.status = "success" if total_invalid_count == 0 else "partial"
         log.finished_at = datetime.now(timezone.utc)
         db.commit()
         logger.info(
             f"Order ingestion: fetched={log.records_fetched}, ingested={log.records_ingested}, "
-            f"invalid={invalid_count}"
+            f"invalid={total_invalid_count}"
         )
-
     except Exception as e:
         db.rollback()
         log.status = "failed"
