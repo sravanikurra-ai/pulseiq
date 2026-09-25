@@ -10,10 +10,11 @@ from app.models.anomaly import Anomaly
 from app.models.forecast import Forecast
 from app.models.alert import Alert
 from app.models.audit_log import AuditLog
+from app.models.fact_orders_daily import FactOrdersDaily
 
 __all__ = [
     "Role", "User", "Customer", "Product", "Order",
     "MarketingCampaign", "MarketingSpend",
     "DataIngestionLog", "DataQualityResult",
-    "KPIResult", "Anomaly", "Forecast", "Alert", "AuditLog",
+    "KPIResult", "Anomaly", "Forecast", "Alert", "AuditLog","FactOrdersDaily",
 ]
