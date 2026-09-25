@@ -2,14 +2,16 @@ import random
 from faker import Faker
 
 fake = Faker()
-Faker.seed(42)
-random.seed(42)
+
 
 REGIONS = ["North America", "Europe", "Asia Pacific", "Latin America"]
 CHANNELS = ["organic", "paid_social", "paid_search", "referral", "email"]
 
 
 def generate_customers(count: int = 500) -> list[dict]:
+    Faker.seed(42)
+    random.seed(42)
+    fake.unique.clear()  # reset uniqueness tracking so repeated calls are truly reproducible
     """
     Generates a list of fake customer records, shaped like what a real
     CRM API would return in its JSON response.

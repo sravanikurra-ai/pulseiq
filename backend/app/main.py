@@ -1,13 +1,18 @@
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.core.config import settings
-from app.core.logging_config import configure_logging
-import logging
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
+from app.core.logging_config import configure_logging
 from app.db.session import get_db
+from app.api import ingestion
+import logging
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -27,7 +32,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.include_router(ingestion.router)
 
 @app.on_event("startup")
 async def on_startup():

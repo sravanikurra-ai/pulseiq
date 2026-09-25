@@ -2,12 +2,13 @@ import random
 from faker import Faker
 
 fake = Faker()
-random.seed(42)
+
 
 CATEGORIES = ["Electronics", "Home & Kitchen", "Apparel", "Beauty", "Sports & Outdoors"]
 
 
 def generate_products(count: int = 40) -> list[dict]:
+    random.seed(42)
     """
     Generates a fake product catalog, shaped like a real product API response.
     """

@@ -1,7 +1,7 @@
 import random
 from datetime import datetime, timedelta, timezone
 
-random.seed(42)
+
 
 STATUSES = ["completed", "completed", "completed", "completed", "cancelled", "refunded"]
 CHANNELS = ["web", "mobile_app"]
@@ -14,6 +14,7 @@ def generate_orders(
     days: int = 180,
     base_orders_per_day: int = 25,
 ) -> list[dict]:
+    random.seed(42)
     """
     Generates fake order records across a date range, with:
     - normal day-to-day random variation

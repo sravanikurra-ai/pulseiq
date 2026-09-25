@@ -1,12 +1,13 @@
 import random
 from datetime import datetime, timedelta, timezone
 
-random.seed(42)
+
 
 CHANNELS = ["facebook_ads", "google_ads", "instagram_ads", "email_campaign"]
 
 
 def generate_campaigns(count: int = 8) -> list[dict]:
+    random.seed(42)
     campaigns = []
     for i in range(count):
         campaigns.append({
@@ -18,12 +19,13 @@ def generate_campaigns(count: int = 8) -> list[dict]:
 
 
 def generate_marketing_spend(campaigns: list[dict], days: int = 180) -> list[dict]:
+    random.seed(42)
     """
     Generates daily marketing spend per campaign, with one intentional
     anomaly: a spend spike with no matching revenue lift (Section 19 example).
     """
     spend_records = []
-    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+    start_date = (datetime.now(timezone.utc) - timedelta(days=days)).replace(hour=0, minute=0, second=0, microsecond=0)
     anomaly_day_spend_spike = days - 20  # planted on purpose
 
     for campaign in campaigns:
