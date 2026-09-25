@@ -15,6 +15,7 @@ class CustomerRecordSchema(BaseModel):
     email: str | None = None
     region: str | None = None
     acquisition_channel: str | None = None
+    created_at: datetime | None = None
 
     @field_validator("external_id")
     @classmethod

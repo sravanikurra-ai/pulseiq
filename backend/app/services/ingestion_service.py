@@ -57,6 +57,7 @@ def ingest_customers(db: Session) -> DataIngestionLog:
         existing_ids = {
             row[0] for row in db.query(Customer.external_id).all()
         }
+
         valid_records = []
         invalid_count = 0
         for c in raw_customers:
@@ -103,7 +104,6 @@ def ingest_customers(db: Session) -> DataIngestionLog:
         raise
 
     return log
-
 
 def ingest_products(db: Session) -> DataIngestionLog:
     """
