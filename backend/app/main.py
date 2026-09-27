@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.logging_config import configure_logging
 from app.db.session import get_db
-from app.api import ingestion, etl, kpis
+from app.api import ingestion, etl, kpis, anomalies
 import logging
 
 configure_logging()
@@ -35,6 +35,7 @@ app.add_middleware(
 app.include_router(ingestion.router)
 app.include_router(etl.router)
 app.include_router(kpis.router)
+app.include_router(anomalies.router)
 
 @app.on_event("startup")
 async def on_startup():
