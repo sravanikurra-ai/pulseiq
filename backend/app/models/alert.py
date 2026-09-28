@@ -21,6 +21,7 @@ class Alert(Base):
 
     source_anomaly_id = Column(Integer, nullable=True)
     source_forecast_id = Column(Integer, nullable=True)
+    dedup_key = Column(String(200), unique=True, nullable=True, index=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     resolved_at = Column(DateTime(timezone=True), nullable=True)

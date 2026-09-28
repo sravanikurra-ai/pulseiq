@@ -76,6 +76,9 @@ def detect_anomalies(db: Session) -> dict:
     if len(df) < 10:
         logger.warning("Not enough data points for meaningful anomaly detection (need >= 10 days).")
         return {"status": "skipped", "reason": "insufficient_data", "rows_available": len(df)}
+    # Idempotency: clear previous results for this metric before inserting
+    db.query(Anomaly).filter(Anomaly.metric_name == "daily_orders").delete(synchronize_session=False)
+    db.commit()
 
     features = df[["order_count", "total_revenue", "total_quantity"]]
     scaler = StandardScaler()
