@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.logging_config import configure_logging
 from app.db.session import get_db
-from app.api import ingestion, etl, kpis, anomalies, forecasts, alerts
+from app.api import ingestion, etl, kpis, anomalies, forecasts, alerts, auth
 import logging
 
 configure_logging()
@@ -38,10 +38,13 @@ app.include_router(kpis.router)
 app.include_router(anomalies.router)
 app.include_router(forecasts.router)
 app.include_router(alerts.router)
+app.include_router(auth.router)
 
 @app.on_event("startup")
 async def on_startup():
     logger.info(f"PulseIQ starting up | env={settings.app_env} | debug={settings.debug}")
+    if settings.jwt_secret_key == "changeme":
+        logger.warning("JWT_SECRET_KEY is the default 'changeme'. Set a real secret in .env.")
 
 
 @app.get("/health", tags=["System"])
