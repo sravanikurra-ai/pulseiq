@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.services import kpi_engine
+from app.api.deps import require_role
 
-router = APIRouter(prefix="/kpis", tags=["KPIs"])
+router = APIRouter(prefix="/kpis", tags=["KPIs"], dependencies=[Depends(require_role("VIEWER"))])
 
 
 def _default_period():

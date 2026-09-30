@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models import Alert
 from app.services.alert_service import generate_alerts, update_alert_status
+from app.api.deps import require_role
+router = APIRouter(prefix="/alerts", tags=["Alerts"], dependencies=[Depends(require_role("VIEWER"))])
 
-router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
 
 class StatusUpdate(BaseModel):
@@ -27,7 +28,7 @@ def _serialize(a: Alert) -> dict:
     }
 
 
-@router.post("/generate")
+@router.post("/generate", dependencies=[Depends(require_role("ANALYST"))])
 async def trigger_alert_generation(db: Session = Depends(get_db)):
     return generate_alerts(db)
 
@@ -43,7 +44,7 @@ async def list_alerts(
     return [_serialize(a) for a in query.order_by(Alert.created_at.desc(), Alert.id.desc()).all()]
 
 
-@router.patch("/{alert_id}/status")
+@router.patch("/{alert_id}/status", dependencies=[Depends(require_role("ANALYST"))])
 async def change_alert_status(alert_id: int, body: StatusUpdate, db: Session = Depends(get_db)):
     try:
         alert = update_alert_status(db, alert_id, body.status)

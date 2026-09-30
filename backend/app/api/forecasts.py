@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.services.forecast_service import generate_forecast
 from app.models import Forecast
+from app.api.deps import require_role
+router = APIRouter(prefix="/forecasts", tags=["Forecasts"], dependencies=[Depends(require_role("VIEWER"))])
 
-router = APIRouter(prefix="/forecasts", tags=["Forecasts"])
 
 
-@router.post("/run")
+@router.post("/run", dependencies=[Depends(require_role("ANALYST"))])
 async def trigger_forecast(db: Session = Depends(get_db)):
     return generate_forecast(db)
 

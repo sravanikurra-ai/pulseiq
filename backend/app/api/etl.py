@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.services.etl_service import run_etl
+from app.api.deps import require_role
 
-router = APIRouter(prefix="/etl", tags=["ETL"])
+router = APIRouter(prefix="/etl", tags=["ETL"], dependencies=[Depends(require_role("ADMIN"))])
 
 
 @router.post("/run")

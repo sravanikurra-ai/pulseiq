@@ -3,11 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.services.ingestion_service import run_full_ingestion
+from app.api.deps import require_role
 
-router = APIRouter(prefix="/ingestion", tags=["Ingestion"])
+router = APIRouter(prefix="/ingestion", tags=["Ingestion"], dependencies=[Depends(require_role("ANALYST"))])
 
 
-@router.post("/run")
+@router.post("/run", dependencies=[Depends(require_role("ADMIN"))])
 async def trigger_ingestion(db: Session = Depends(get_db)):
     """
     Triggers a full ingestion run across all sources (customers, products,

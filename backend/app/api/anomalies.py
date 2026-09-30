@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.services.anomaly_service import detect_anomalies
 from app.models import Anomaly
+from app.api.deps import require_role
 
-router = APIRouter(prefix="/anomalies", tags=["Anomalies"])
+router = APIRouter(prefix="/anomalies", tags=["Anomalies"], dependencies=[Depends(require_role("VIEWER"))])
 
 
-@router.post("/run")
+@router.post("/run", dependencies=[Depends(require_role("ANALYST"))])
 async def trigger_anomaly_detection(db: Session = Depends(get_db)):
     """
     Runs Isolation Forest anomaly detection over the full daily order
