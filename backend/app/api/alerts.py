@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.api.deps import require_role
 from app.db.session import get_db
 from app.models import Alert
 from app.services.alert_service import generate_alerts, update_alert_status
-from app.api.deps import require_role
-router = APIRouter(prefix="/alerts", tags=["Alerts"], dependencies=[Depends(require_role("VIEWER"))])
+from app.schemas.pagination import pagination_params
 
+router = APIRouter(prefix="/alerts", tags=["Alerts"], dependencies=[Depends(require_role("VIEWER"))])
 
 
 class StatusUpdate(BaseModel):
@@ -37,11 +38,24 @@ async def trigger_alert_generation(db: Session = Depends(get_db)):
 async def list_alerts(
     status: str | None = Query(None, description="OPEN, ACKNOWLEDGED or RESOLVED"),
     db: Session = Depends(get_db),
+    page=Depends(pagination_params),
 ):
     query = db.query(Alert)
     if status:
         query = query.filter(Alert.status == status.upper())
-    return [_serialize(a) for a in query.order_by(Alert.created_at.desc(), Alert.id.desc()).all()]
+
+    total = query.count()
+    results = (
+        query.order_by(Alert.created_at.desc(), Alert.id.desc())
+        .offset(page["offset"]).limit(page["limit"])
+        .all()
+    )
+    return {
+        "total": total,
+        "limit": page["limit"],
+        "offset": page["offset"],
+        "items": [_serialize(a) for a in results],
+    }
 
 
 @router.patch("/{alert_id}/status", dependencies=[Depends(require_role("ANALYST"))])

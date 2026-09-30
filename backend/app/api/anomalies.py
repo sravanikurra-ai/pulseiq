@@ -5,6 +5,7 @@ from app.db.session import get_db
 from app.services.anomaly_service import detect_anomalies
 from app.models import Anomaly
 from app.api.deps import require_role
+from app.schemas.pagination import pagination_params
 
 router = APIRouter(prefix="/anomalies", tags=["Anomalies"], dependencies=[Depends(require_role("VIEWER"))])
 
@@ -19,18 +20,27 @@ async def trigger_anomaly_detection(db: Session = Depends(get_db)):
 
 
 @router.get("/")
-async def list_anomalies(db: Session = Depends(get_db)):
-    """Returns all stored anomalies, most recent first."""
-    results = db.query(Anomaly).order_by(Anomaly.detected_at.desc()).all()
-    return [
-        {
-            "id": a.id,
-            "metric_name": a.metric_name,
-            "observed_value": float(a.observed_value),
-            "expected_value": float(a.expected_value) if a.expected_value is not None else None,
-            "anomaly_score": float(a.anomaly_score),
-            "detected_at": a.detected_at.isoformat(),
-            "explanation": a.explanation,
-        }
-        for a in results
-    ]
+async def list_anomalies(db: Session = Depends(get_db), page=Depends(pagination_params)):
+    total = db.query(Anomaly).count()
+    results = (
+        db.query(Anomaly)
+        .order_by(Anomaly.detected_at.desc())
+        .offset(page["offset"]).limit(page["limit"])
+        .all()
+    )
+    return {
+        "total": total,
+        "limit": page["limit"],
+        "offset": page["offset"],
+        "items": [
+            {
+                "id": a.id, "metric_name": a.metric_name,
+                "observed_value": float(a.observed_value),
+                "expected_value": float(a.expected_value) if a.expected_value is not None else None,
+                "anomaly_score": float(a.anomaly_score),
+                "detected_at": a.detected_at.isoformat(),
+                "explanation": a.explanation,
+            }
+            for a in results
+        ],
+    }
