@@ -101,3 +101,9 @@ async def get_summary(
     """All KPIs at once, for the dashboard's main summary cards."""
     start, end = (start_date, end_date) if start_date and end_date else _default_period()
     return kpi_engine.compute_all_kpis(db, start, end)
+
+@router.get("/revenue/trend")
+async def get_revenue_trend(
+    days: int = Query(120, ge=7, le=365), db: Session = Depends(get_db)
+):
+    return {"items": kpi_engine.get_daily_revenue_trend(db, days)}

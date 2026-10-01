@@ -201,3 +201,14 @@ def compute_all_kpis(db: Session, start: date, end: date) -> dict:
         }
     db.commit()
     return results
+def get_daily_revenue_trend(db: Session, days: int = 120) -> list[dict]:
+    """Daily revenue series for charting — reuses fact_orders_daily, no new aggregation logic."""
+    cutoff = date.today() - timedelta(days=days)
+    rows = (
+        db.query(FactOrdersDaily.order_date, sql_func.sum(FactOrdersDaily.total_revenue).label("revenue"))
+        .filter(FactOrdersDaily.status == "completed", FactOrdersDaily.order_date >= cutoff)
+        .group_by(FactOrdersDaily.order_date)
+        .order_by(FactOrdersDaily.order_date)
+        .all()
+    )
+    return [{"date": r.order_date.isoformat(), "revenue": float(r.revenue)} for r in rows]

@@ -1,10 +1,22 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import client from "../api/client";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem("pulseiq_token"));
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (!token) {
+      setUser(null);
+      return;
+    }
+    client
+      .get("/auth/me")
+      .then((res) => setUser(res.data))
+      .catch(() => setUser(null));
+  }, [token]);
 
   const login = async (email, password) => {
     const form = new URLSearchParams();
@@ -21,10 +33,11 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem("pulseiq_token");
     setToken(null);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );
