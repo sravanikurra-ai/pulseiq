@@ -6,7 +6,7 @@ import client from "../api/client";
 import KpiCard from "../components/KpiCard";
 import SeverityBadge from "../components/SeverityBadge";
 
-const money = (v) => `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+const money = (v) => `$${Number(v).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 const pct = (v) => `${v}%`;
 
 function buildChartData(trend, forecastItems, anomalyItems) {
