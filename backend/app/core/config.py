@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     app_env: str = "development"
     debug: bool = True
 
+    test_database_url: str = "postgresql://user:password@localhost:5432/pulseiq_test"
+
     # Database (used starting Phase 4 — placeholder default for now)
     database_url: str = "postgresql://user:password@localhost:5432/pulseiq"
 
