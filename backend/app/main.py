@@ -1,11 +1,14 @@
 import sys
 from pathlib import Path
 
-# Add the project root (parent of backend/) to sys.path so app code can
-# import from the top-level data/ package, which simulates external
-# Orders/CRM/Marketing systems. In production, these mock imports would
-# be replaced by real HTTP API calls, and this path shim would be removed.
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+# In Docker, data/ is copied to /data (sibling of /app). On the host,
+# data/ is two levels up from this file. Try both so the same code works
+# in both environments.
+docker_data_path = Path("/data")
+if docker_data_path.exists():
+    sys.path.append("/")
+else:
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 import logging
 from contextlib import asynccontextmanager
@@ -52,16 +55,18 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Allow the React frontend (running on a different port) to call this API.
-# allow_credentials=True is required for the httpOnly cookie to be sent
-# cross-port in development; allow_origins must list explicit origins
-# (not "*") since wildcard origins are incompatible with credentialed requests.
+# Allow the React frontend (running on a different port, or a different
+# container) to call this API. allow_credentials=True is required for the
+# httpOnly cookie to be sent cross-port; allow_origins must list explicit
+# origins (not "*") since wildcard origins are incompatible with
+# credentialed requests.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5174",
     ],
     allow_credentials=True,
     allow_methods=["*"],
