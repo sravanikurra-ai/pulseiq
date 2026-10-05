@@ -1,21 +1,29 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+import logging
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+logger = logging.getLogger(__name__)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
-    """Dependency: any endpoint that lists this becomes protected."""
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
+    """
+    Dependency: any endpoint that lists this becomes protected.
+    Reads the JWT from the httpOnly cookie set at login, not an
+    Authorization header — Swagger's "Authorize" button no longer applies
+    to this app; test via the browser or a script that preserves cookies.
+    """
     credentials_error = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
     )
+    token = request.cookies.get("pulseiq_token")
+    if token is None:
+        raise credentials_error
+
     payload = decode_access_token(token)
     if payload is None:
         raise credentials_error
@@ -28,9 +36,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None or not user.is_active:
         raise credentials_error
     return user
-import logging
 
-logger = logging.getLogger(__name__)
 
 # Higher number = more privilege. ADMIN inherits ANALYST, which inherits VIEWER.
 ROLE_RANK = {"VIEWER": 1, "ANALYST": 2, "ADMIN": 3}

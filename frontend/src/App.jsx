@@ -5,7 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import Layout from "./components/Layout";
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, checked } = useAuth();
+  if (!checked) return <div className="min-h-screen bg-ink-950" />;
   return isAuthenticated ? children : <Navigate to="/login" />;
 }
 

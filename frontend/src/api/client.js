@@ -1,18 +1,21 @@
 import axios from "axios";
 
-const client = axios.create({ baseURL: "http://127.0.0.1:8000" });
-
-client.interceptors.request.use((config) => {
-  const token = localStorage.getItem("pulseiq_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+const client = axios.create({
+  baseURL: "http://127.0.0.1:8000",
+  withCredentials: true, // send the httpOnly auth cookie automatically
 });
 
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem("pulseiq_token");
+    // /auth/me returning 401 just means "not logged in" — a normal, expected
+    // outcome when checking auth status on page load. Redirecting here would
+    // reload the page, remount the app, re-check /auth/me, get 401 again,
+    // and redirect again — an infinite loop. Only redirect on 401s from
+    // OTHER endpoints, where it means a previously-valid session expired
+    // mid-use.
+    const isAuthCheck = error.config && error.config.url === "/auth/me";
+    if (error.response && error.response.status === 401 && !isAuthCheck) {
       window.location.href = "/login";
     }
     return Promise.reject(error);
