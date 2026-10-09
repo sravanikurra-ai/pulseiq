@@ -4,9 +4,9 @@ import { useAuth } from "../context/AuthContext";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, enabled: true },
-  { to: "/anomalies", label: "Anomalies", icon: AlertTriangle, enabled: false },
-  { to: "/forecasts", label: "Forecasting", icon: TrendingUp, enabled: false },
-  { to: "/assistant", label: "Ask PulseIQ", icon: MessageSquare, enabled: false },
+  { to: "/anomalies", label: "Anomalies", icon: AlertTriangle, enabled: true },
+  { to: "/forecasts", label: "Forecasting", icon: TrendingUp, enabled: true },
+  { to: "/assistant", label: "Ask PulseIQ", icon: MessageSquare, enabled: true },
 ];
 
 export default function Layout({ children }) {
